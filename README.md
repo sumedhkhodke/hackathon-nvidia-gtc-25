@@ -19,24 +19,34 @@ We live in the age of the **Quantified Self** - tracking sleep, fitness, mood, p
 
 ## ✨ What Makes This Different
 
-### 🤖 True Agentic AI
-Not just a chatbot - a **multi-agent system** that:
-- **Plans** multi-step reasoning workflows
-- **Retrieves** relevant data intelligently
-- **Synthesizes** insights using specialized models
-- **Adapts** to your unique patterns
+### 🤖 True Agentic AI with ReAct Pattern
+Not just a chatbot - a **multi-agent system** implementing **ReAct (Reasoning + Action)**:
+- **Reasons** about queries using explicit planning
+- **Acts** by retrieving data and executing tools
+- **Observes** results and adapts iteratively
+- **Synthesizes** insights through multi-step workflows
+- **Transparently** shows every reasoning step
+
+### 🛡️ Safety-First Design with Nemotron Guardrails
+**Mandatory safety checkpoints** powered by Nemotron Safety Guard 8B v3:
+- ✅ **Input Validation**: Every query checked before processing
+- ✅ **Output Validation**: All AI responses validated before delivery
+- ✅ **Content Moderation**: 23 unsafe categories monitored
+- ✅ **Privacy Protection**: Medical/financial advice blocked
+- ✅ **Crisis Detection**: Self-harm indicators flagged
 
 ### 🔒 Privacy-First Architecture
 - All data processing can run **100% locally**
 - No data ever sent to external servers (using NVIDIA NIM)
 - Privacy-by-design, not privacy-by-policy
+- AI-powered privacy guardrails actively protect user data
 
 ### 🎯 Specialized Nemotron Models
 Each agent uses the right Nemotron model for its role:
 - **Llama 3.3 Nemotron Super 49B**: Complex reasoning & synthesis
+- **Nemotron Safety Guard 8B v3**: ✨ **NEW** - Safety & moderation
 - **Nemotron Nano 9B**: Fast query analysis (future)
 - **Nemotron Nano VL 12B**: Multimodal data processing (future)
-- **NemoGuard 8B**: Safety & privacy guardrails (future)
 
 ---
 
@@ -112,39 +122,72 @@ Once running, ask questions like:
         └────────────────────────────────────┘
 ```
 
-### Agentic Workflow
+### Agentic Workflow with ReAct Pattern
 
 ```mermaid
 graph LR
-    A[User Query] --> B[Query Analysis]
-    B --> C[Data Retrieval]
-    C --> D[Response Synthesis]
-    D --> E[Personalized Insight]
+    A[User Query] --> B[🛡️ Safety Check]
+    B --> C[🧠 ReAct Loop]
+    C --> D[Reason]
+    D --> E[Act]
+    E --> F[Observe]
+    F --> |Continue| D
+    F --> |Sufficient| G[🎨 Synthesis]
+    G --> H[🛡️ Output Check]
+    H --> I[Response]
     
-    style B fill:#76B900
+    style B fill:#FF6B6B
     style C fill:#76B900
-    style D fill:#76B900
+    style D fill:#4ECDC4
+    style E fill:#45B7D1
+    style F fill:#FFA07A
+    style G fill:#98D8C8
+    style H fill:#FF6B6B
 ```
 
 **Step-by-Step Process:**
 
-1. **Query Analysis** 🧠
-   - Understands user intent
-   - Extracts key topics (sleep, mood, productivity)
-   - Identifies time ranges and insight types
-   - Agent: Nemotron Super 49B
+1. **🛡️ Input Safety Check** (Nemotron Safety Guard 8B v3)
+   - Validates user query for safety concerns
+   - Blocks medical advice requests, self-harm indicators
+   - Checks for privacy violations and malicious intent
+   - Agent: SafetyGuardAgent
 
-2. **Data Retrieval** 🔍
-   - Semantic search using vector embeddings
-   - Finds most relevant lifelog entries
-   - Context-aware retrieval
-   - Store: ChromaDB with auto-embeddings
+2. **🧠 ReAct Cycle** (Iterative Reasoning Loop, max 3 cycles)
+   
+   **Reason** - Planning Phase
+   - Analyzes the query and current context
+   - Reviews previous observations
+   - Determines information gaps
+   - Plans next action (data retrieval, search, analysis)
+   - Agent: ReActAgent (Nemotron Super 49B)
+   
+   **Act** - Execution Phase
+   - Executes planned action
+   - Retrieves data from vector database
+   - Calls external tools (future: web search)
+   - Collects results
+   - Store: ChromaDB with semantic search
+   
+   **Observe** - Reflection Phase
+   - Analyzes action results
+   - Determines if information is sufficient
+   - Decides: Continue searching OR Synthesize answer
+   - Updates context for next cycle
+   - Agent: ReActAgent (Nemotron Super 49B)
 
-3. **Response Synthesis** 💡
-   - Multi-step reasoning over retrieved data
+3. **🎨 Response Synthesis** 
+   - Synthesizes all gathered information
    - Identifies patterns and correlations
    - Generates actionable recommendations
-   - Agent: Nemotron Super 49B (Reasoning Agent)
+   - Creates empathetic, personalized insights
+   - Agent: ReasoningAgent (Nemotron Super 49B)
+
+4. **🛡️ Output Safety Check** (Nemotron Safety Guard 8B v3)
+   - Validates AI-generated response
+   - Blocks medical diagnoses or financial predictions
+   - Ensures no privacy violations or harmful content
+   - Agent: SafetyGuardAgent
 
 ---
 
@@ -181,8 +224,9 @@ hackathon-nvidia-gtc-25/
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
 | **AI Models** | NVIDIA Nemotron Super 49B v1.5 | Advanced reasoning & synthesis |
+| **Safety Model** | Nemotron Safety Guard 8B v3 | Content moderation & safety |
 | **API Access** | NVIDIA NIM API | Cloud inference endpoints |
-| **Orchestration** | LangGraph | Multi-agent workflow management |
+| **Orchestration** | LangGraph | Multi-agent workflow with ReAct pattern |
 | **Vector DB** | ChromaDB | Semantic search & embeddings |
 | **Framework** | LangChain | AI application framework |
 | **UI** | Streamlit | Interactive chat interface |
@@ -265,19 +309,22 @@ Recommendations:
 ## 🚧 Current Implementation (MVP)
 
 **Working Features:**
-- ✅ Nemotron API integration
-- ✅ Multi-agent workflow with LangGraph
-- ✅ Vector database for semantic search
-- ✅ Interactive chat UI with reasoning visibility
-- ✅ Sample lifelog data (30+ entries)
+- ✅ **Nemotron API integration** (Super 49B + Safety Guard 8B v3)
+- ✅ **ReAct Pattern Implementation** with iterative reasoning loops
+- ✅ **Safety Guardrails** with input/output validation
+- ✅ **Multi-agent orchestration** with LangGraph
+- ✅ **Vector database** for semantic search (ChromaDB)
+- ✅ **Interactive chat UI** with reasoning visibility and safety status
+- ✅ **Sample lifelog data** (30+ entries)
+- ✅ **Comprehensive test suite** (20+ test cases)
 
-**Future Enhancements** (see [ROADMAP.md](ROADMAP.md)):
-- ⚠️ Multiple Nemotron model specialization
-- ⚠️ Multimodal data (images, audio)
+**Future Enhancements**:
+- ⚠️ Web search integration in ReAct loop
+- ⚠️ Multimodal data processing (Nemotron Nano VL)
 - ⚠️ Real-time data ingestion
-- ⚠️ Proactive insights
+- ⚠️ Proactive insights and notifications
 - ⚠️ Local NIM deployment
-- ⚠️ NemoGuard safety integration
+- ⚠️ Custom safety policy configuration
 
 ---
 
@@ -289,33 +336,49 @@ Recommendations:
 # Test data store
 python src/data_store.py
 
-# Test agents
+# Test all agents (includes Safety Guard and ReAct)
 python src/agents.py
 
 # Test workflow
 python src/agentic_workflow.py
+
+# Run comprehensive safety and ReAct test suite
+python test_safety_react.py
 ```
+
+### Comprehensive Test Suite
+
+The `test_safety_react.py` includes:
+- ✅ **Safety Guard Input Validation** (6 test cases)
+- ✅ **Safety Guard Output Validation** (4 test cases)
+- ✅ **ReAct Agent Reasoning** (3 scenarios)
+- ✅ **ReAct Agent Observation** (2 scenarios)
+- ✅ **Full Workflow Integration** (3 end-to-end tests)
+- ✅ **Edge Cases** (4 scenarios)
 
 ### Expected Output
 Each test should show:
 - ✅ Successful API connection
-- ✅ Data loading confirmation
-- ✅ Query processing
-- ✅ Response generation
+- ✅ Safety checks passing/blocking appropriately
+- ✅ ReAct cycles completing with reasoning traces
+- ✅ Data loading and retrieval
+- ✅ Response generation with validation
 
 ---
 
 ## 📚 Learn More
 
-- **Full Technical Blueprint**: [erik/project-outline.md](erik/project-outline.md)
-- **Quick Start Guide**: [QUICK_START.md](QUICK_START.md)
-- **Demo Preparation**: [DEMO.md](DEMO.md)
-- **Development Roadmap**: [ROADMAP.md](ROADMAP.md)
+- **🏗️ Advanced Architecture**: [ARCHITECTURE.md](ARCHITECTURE.md) - Deep dive into ReAct and Safety Guardrails
+- **📋 Full Technical Blueprint**: [erik/project-outline.md](erik/project-outline.md)
+- **🚀 Quick Start Guide**: [QUICK_START.md](QUICK_START.md)
+- **🎬 Demo Preparation**: [DEMO.md](DEMO.md)
 
 ### External Resources
 - [NVIDIA Build Platform](https://build.nvidia.com/)
+- [Nemotron Safety Guard Model](https://build.nvidia.com/nvidia/llama-3_1-nemotron-safety-guard-8b-v3)
 - [Nemotron Models Documentation](https://docs.nvidia.com/nemo-framework/)
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
+- [ReAct Paper](https://arxiv.org/abs/2210.03629)
 
 ---
 

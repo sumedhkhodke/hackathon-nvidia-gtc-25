@@ -8,49 +8,54 @@ graph TB
         RawData -->|4. Store Metadata| Metadata[(Metadata DB<br/>SQLite)]
     end
 
-    subgraph "Flow 2: LangGraph Orchestrated Agentic Workflow"
+    subgraph "Flow 2: LangGraph ReAct Orchestration - Streaming to UI"
         U2[User] -->|Natural Language Query| Chat[Streamlit Chat UI]
-        Chat -->|Input| SafetyIn[Safety Guard In<br/>NemoGuard 8B]
-        SafetyIn -->|Validated Query| Orch{LangGraph<br/>Orchestrator<br/>State Manager}
+        Chat -->|Input Stream| SafetyIn[🛡️ Safety Guard In<br/>NemoGuard 8B v3]
+        SafetyIn -->|✅ Validated| Orch{🎯 LangGraph<br/>Orchestrator<br/>State Manager}
+        SafetyIn -->|❌ Blocked| U2
         
-        Orch -->|1. Analyze Intent| QueryAgent[Query Analysis<br/>Nemotron Nano 9B]
-        QueryAgent -->|Analysis Result| Orch
+        Orch -->|ReAct Cycle 1-3: REASON| ReActAgent[🧠 ReAct Agent<br/>Nemotron Super 49B]
+        ReActAgent -->|📋 Plan & Reasoning| Orch
         
-        Orch -->|2. Plan & Reason| ReasonAgent[Reasoning Core<br/>Nemotron Super 49B]
-        ReasonAgent -->|Execution Plan| Orch
+        Orch -->|ReAct: ACT<br/>Execute Plan| DataRetrieval[⚡ Data Retrieval<br/>RAG Query]
+        DataRetrieval -->|Query| VectorDB
+        VectorDB -->|📊 Results| DataRetrieval
+        DataRetrieval -->|Retrieved Data| Orch
         
-        Orch ==>|3a. Parallel: Retrieve Personal Data| RAGTool[RAG Tool<br/>Nemotron Nano 9B]
-        RAGTool -->|Query| VectorDB
-        VectorDB -->|Context| RAGTool
-        RAGTool -->|Retrieved Context| Orch
+        Orch -->|ReAct: OBSERVE<br/>Reflect| ReActAgent
+        ReActAgent -->|🔍 Observation<br/>Sufficient?| Orch
         
-        Orch ==>|3b. Parallel: Process Multimodal| MMAgent[Multimodal Agent<br/>Nemotron Nano 12B VL]
-        MMAgent -->|Extract Visual Data| Metadata
-        MMAgent -->|Visual Insights| Orch
+        Orch -.->|🔄 If more data needed<br/>Loop back| ReActAgent
         
-        Orch ==>|3c. Parallel: External Search| WebTool[Web Search Tool<br/>Nemotron Nano 9B]
-        WebTool -->|Search Results| Orch
+        Orch -->|All Data Gathered<br/>Synthesize| Synthesis[🎨 Synthesis Agent<br/>Nemotron Super 49B]
+        Synthesis -->|Draft Response| Orch
         
-        Orch -->|4. Synthesize with All Data| ReasonAgent
-        ReasonAgent -->|Draft Response| Orch
+        Orch -->|Final Check| SafetyOut[🛡️ Safety Guard Out<br/>NemoGuard 8B v3]
+        SafetyOut -->|✅ Safe Response| Response[💬 Final Response]
+        SafetyOut -->|⚠️ Needs Refinement| Synthesis
         
-        Orch -->|5. Final Check| SafetyOut[Safety Guard Out<br/>NemoGuard 8B]
-        SafetyOut -->|Safe Response| Response[Final Response]
-        Response -->|Display| U2
-        
-        Orch -.->|Iterate if needed| ReasonAgent
+        Response -->|Display + Accordion<br/>Reasoning Steps| Chat
+        Chat -->|Real-time Stream<br/>Intermediate Steps| U2
+    end
+
+    subgraph "Streaming Events to UI"
+        Orch -.->|Stream: Thinking| StreamUI[📡 Live UI Updates]
+        ReActAgent -.->|Stream: Reasoning| StreamUI
+        DataRetrieval -.->|Stream: Acting| StreamUI
+        Synthesis -.->|Stream: Synthesizing| StreamUI
+        StreamUI -.->|Real-time Display| Chat
     end
 
     style U1 fill:#e1f5ff
     style U2 fill:#e1f5ff
     style VectorDB fill:#f3e5f5
     style Metadata fill:#fff4e6
-    style Orch fill:#ffe0b2
-    style ReasonAgent fill:#fff3e0
-    style QueryAgent fill:#e3f2fd
-    style RAGTool fill:#e3f2fd
-    style MMAgent fill:#f3e5f5
-    style WebTool fill:#e3f2fd
-    style SafetyIn fill:#ffcdd2
-    style SafetyOut fill:#ffcdd2
+    style Orch fill:#ffe0b2,stroke:#ff9800,stroke-width:3px
+    style ReActAgent fill:#fff3e0,stroke:#ff6f00,stroke-width:2px
+    style DataRetrieval fill:#e3f2fd
+    style Synthesis fill:#e8f5e9
+    style SafetyIn fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px
+    style SafetyOut fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px
+    style StreamUI fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style Chat fill:#e1f5ff,stroke:#2196f3,stroke-width:2px
 ```
