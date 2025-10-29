@@ -2,12 +2,16 @@
 import os
 from typing import Dict, List
 from openai import OpenAI
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 class NemotronAgent:
     """Client for NVIDIA Nemotron models via API."""
     
-    def __init__(self, model_name: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct"):
+    def __init__(self, model_name: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"):
         """Initialize the Nemotron agent.
         
         Args:
@@ -63,7 +67,7 @@ class ReasoningAgent(NemotronAgent):
     """
     
     def __init__(self):
-        super().__init__(model_name="nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct")
+        super().__init__(model_name="nvidia/llama-3.3-nemotron-super-49b-v1.5")
         self.system_prompt = """You are an expert personal AI coach and data analyst. 
 Your role is to analyze personal lifelog data and provide insightful, actionable advice.
 
