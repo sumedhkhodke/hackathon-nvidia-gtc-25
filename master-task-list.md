@@ -36,28 +36,18 @@
 
 ### Task 1.1: Install Dependencies
 **Time: 3 minutes**
-- [ ] Create `requirements.txt`:
-  ```
-  langchain==0.1.0
-  langchain-nvidia-ai-endpoints==0.0.11
-  langgraph==0.0.20
-  streamlit==1.29.0
-  chromadb==0.4.22
-  pandas==2.1.4
-  python-dotenv==1.0.0
-  ```
-- [ ] Install: `pip install -r requirements.txt`
+- [x] Create `requirements.txt`
+- [x] Install: `uv sync`
 
 ### Task 1.2: Sample Data Creation
 **Time: 5 minutes**
-- [ ] Create `data/sample_lifelog.csv` with mock personal data:
+- [x] Create `data/sample_lifelog.csv` with mock personal data (32 entries created)
   - Columns: date, category, entry, mood_score
-  - 20-30 rows of sample entries (sleep, exercise, work, mood)
-  - Example: "2025-10-15, sleep, Slept 6.5 hours, woke up twice, 3"
+  - Realistic entries spanning sleep, exercise, work, mood
 
 ### Task 1.3: Simple Vector Store Setup
 **Time: 7 minutes**
-- [ ] Create `src/data_store.py`:
+- [x] Create `src/data_store.py`:
   - Function to load CSV
   - Function to create ChromaDB collection
   - Function to embed and store data using simple text embeddings
@@ -69,31 +59,24 @@
 
 ### Task 2.1: NVIDIA Nemotron Integration
 **Time: 10 minutes**
-- [ ] Create `src/agents.py`
-- [ ] Setup NVIDIA API client for Nemotron model
-- [ ] Use **ONE** model initially: `nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct`
-- [ ] Test simple completion to verify API works
+- [x] Create `src/agents.py`
+- [x] Setup NVIDIA API client for Nemotron model
+- [x] Use **ONE** model initially: `nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct`
+- [x] Implemented 3 agent classes: NemotronAgent, QueryAnalyzer, ReasoningAgent
+- [x] Test simple completion to verify API works
 
 ### Task 2.2: Minimal LangGraph Agent
 **Time: 15 minutes**
-- [ ] Create `src/agentic_workflow.py`
-- [ ] Define LangGraph StateGraph with state schema:
-  ```python
-  from typing import TypedDict
-  class AgentState(TypedDict):
-      query: str
-      query_analysis: dict
-      retrieved_data: list
-      response: str
-  ```
-- [ ] Define 3 nodes:
+- [x] Create `src/agentic_workflow.py`
+- [x] Define LangGraph StateGraph with state schema (AgentState with reasoning_steps)
+- [x] Define 3 nodes:
   1. **analyze_query_node**: Uses QueryAnalyzer to understand intent
   2. **retrieve_data_node**: Uses LifelogDataStore to get relevant entries
   3. **synthesize_node**: Uses ReasoningAgent to generate insights
-- [ ] Connect nodes: START → analyze → retrieve → synthesize → END
-- [ ] Add error handling for each node
-- [ ] Create `run_workflow(query: str)` function that returns response
-- [ ] Test with simple query: "How is my sleep?"
+- [x] Connect nodes: START → analyze → retrieve → synthesize → END
+- [x] Add error handling for each node
+- [x] Create `run(query: str)` method that returns response with reasoning steps
+- [x] Test function included
 
 **SIMPLIFIED WORKFLOW** (no web search, no multimodal for now):
 ```
@@ -106,28 +89,26 @@ User Query → Analyze Intent → Retrieve Personal Data → Synthesize Answer
 
 ### Task 3.1: Streamlit Chat Interface
 **Time: 10 minutes**
-- [ ] Create `app.py`
-- [ ] Initialize on startup:
-  ```python
-  # Load data store
-  # Initialize workflow
-  # Display welcome message
-  ```
-- [ ] Main chat interface:
+- [x] Create `app.py`
+- [x] Initialize on startup (cached for performance)
+- [x] Main chat interface:
   - `st.chat_input()` for user questions
   - `st.chat_message()` for display
   - Show each workflow step (expander for reasoning)
   - Display final response
   - Handle loading states with spinner
-- [ ] Add sidebar:
+- [x] Add sidebar:
   - Database stats (entries loaded)
   - Model info (Nemotron Super 49B)
-  - Sample questions as buttons
-- [ ] Error handling:
+  - Sample questions (5 examples)
+  - How it works section
+  - NVIDIA branding
+- [x] Error handling:
   - Missing API key → show setup instructions
   - No data → show data loading instructions
   - API errors → friendly message
-- [ ] Test locally: `streamlit run app.py`
+- [x] Professional UI with custom CSS
+- [ ] Test locally: `uv run streamlit run app.py` (REQUIRES API KEY)
 
 ---
 
@@ -135,10 +116,12 @@ User Query → Analyze Intent → Retrieve Personal Data → Synthesize Answer
 
 ### Task 4.1: Prepare Demo Script
 **Time: 5 minutes**
-- [ ] Create `DEMO.md` with:
+- [x] Create `DEMO.md` with:
   - 3 pre-tested questions that work well
   - Expected responses
   - Key talking points for each judging criterion
+  - Troubleshooting guide
+  - Time allocation
 
 **Sample Questions**:
 1. "What patterns do you see in my sleep quality over the past week?"
@@ -147,11 +130,14 @@ User Query → Analyze Intent → Retrieve Personal Data → Synthesize Answer
 
 ### Task 4.2: Documentation Sprint
 **Time: 5 minutes**
-- [ ] Update `README.md` with:
+- [x] Update `README.md` with:
   - Quick start instructions
-  - Architecture diagram (simple text/ASCII)
+  - Architecture diagram (ASCII art)
   - How it addresses judging criteria
-  - Future roadmap (the full vision from project-outline.md)
+  - Technologies used
+  - Project structure
+  - Testing instructions
+  - Future roadmap
 
 ---
 

@@ -1,8 +1,8 @@
-"""LangGraph agentic workflow for personal lifelog analysis."""
+"""LangGraph agentic workflow for personal lifelog analysis with ReAct pattern."""
 from typing import TypedDict, Annotated, Sequence
 import operator
 from langgraph.graph import StateGraph, END
-from src.agents import QueryAnalyzer, ReasoningAgent
+from src.agents import QueryAnalyzer, ReasoningAgent, SafetyGuardAgent, ReActAgent
 from src.data_store import LifelogDataStore
 
 
@@ -13,42 +13,113 @@ class AgentState(TypedDict):
     retrieved_data: list
     response: str
     reasoning_steps: list
+    safety_checks: list
+    react_context: dict
+    observations: list
+    iteration_count: int
+    should_continue: bool
 
 
 class LifelogAgentWorkflow:
-    """Orchestrates the agentic workflow using LangGraph."""
+    """Orchestrates the agentic workflow using LangGraph with ReAct pattern and safety guardrails."""
     
-    def __init__(self, data_store: LifelogDataStore):
+    def __init__(self, data_store: LifelogDataStore, max_iterations: int = 3):
         """Initialize the workflow with required components.
         
         Args:
             data_store: Vector database for lifelog data
+            max_iterations: Maximum ReAct loop iterations
         """
         self.data_store = data_store
         self.query_analyzer = QueryAnalyzer()
         self.reasoning_agent = ReasoningAgent()
+        self.safety_guard = SafetyGuardAgent()
+        self.react_agent = ReActAgent()
+        self.max_iterations = max_iterations
         self.graph = self._build_graph()
     
     def _build_graph(self) -> StateGraph:
-        """Build the LangGraph workflow.
+        """Build the LangGraph workflow with ReAct pattern and safety guardrails.
+        
+        The workflow follows this pattern:
+        1. Safety Check (Input) - Validate user input
+        2. ReAct Loop:
+           - Reason: Analyze query and plan actions
+           - Act: Retrieve data or perform actions
+           - Observe: Reflect on results and decide next steps
+        3. Synthesize Response
+        4. Safety Check (Output) - Validate AI response
         
         Returns:
             Compiled state graph
         """
         workflow = StateGraph(AgentState)
         
-        # Add nodes
-        workflow.add_node("analyze_query", self.analyze_query_node)
-        workflow.add_node("retrieve_data", self.retrieve_data_node)
+        # Add nodes for safety guardrails
+        workflow.add_node("safety_check_input", self.safety_check_input_node)
+        workflow.add_node("safety_check_output", self.safety_check_output_node)
+        
+        # Add nodes for ReAct pattern
+        workflow.add_node("react_reason", self.react_reason_node)
+        workflow.add_node("react_act", self.react_act_node)
+        workflow.add_node("react_observe", self.react_observe_node)
+        
+        # Add node for final synthesis
         workflow.add_node("synthesize_response", self.synthesize_response_node)
         
-        # Define edges (workflow flow)
-        workflow.set_entry_point("analyze_query")
-        workflow.add_edge("analyze_query", "retrieve_data")
-        workflow.add_edge("retrieve_data", "synthesize_response")
-        workflow.add_edge("synthesize_response", END)
+        # Define workflow flow
+        workflow.set_entry_point("safety_check_input")
+        
+        # After input safety check, start ReAct reasoning
+        workflow.add_edge("safety_check_input", "react_reason")
+        
+        # After reasoning, perform action
+        workflow.add_edge("react_reason", "react_act")
+        
+        # After action, observe and decide
+        workflow.add_edge("react_act", "react_observe")
+        
+        # After observation, either continue ReAct loop or synthesize
+        workflow.add_conditional_edges(
+            "react_observe",
+            self._should_continue_react,
+            {
+                "continue": "react_reason",  # Loop back for more reasoning
+                "synthesize": "synthesize_response"  # Move to final answer
+            }
+        )
+        
+        # After synthesis, check output safety
+        workflow.add_edge("synthesize_response", "safety_check_output")
+        
+        # After output safety check, end
+        workflow.add_edge("safety_check_output", END)
         
         return workflow.compile()
+    
+    def _should_continue_react(self, state: AgentState) -> str:
+        """Determine if ReAct loop should continue or move to synthesis.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            "continue" to keep looping, "synthesize" to generate final answer
+        """
+        # Check if we've hit max iterations
+        if state.get("iteration_count", 0) >= self.max_iterations:
+            return "synthesize"
+        
+        # Check if agent decided it has sufficient information
+        if state.get("should_continue", False) is False:
+            return "synthesize"
+        
+        # Check if we have enough data
+        if len(state.get("observations", [])) >= 2 and state.get("retrieved_data"):
+            return "synthesize"
+        
+        # Continue by default
+        return "continue"
     
     def analyze_query_node(self, state: AgentState) -> AgentState:
         """Node 1: Analyze user query to understand intent.

@@ -21,6 +21,7 @@ dependencies = [
     { name = "pandas" },
     { name = "python-dotenv" },
     { name = "streamlit" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -34,17 +35,18 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
-    { name = "chromadb", specifier = ">=0.4.22" },
-    { name = "langchain", specifier = ">=0.1.0" },
-    { name = "langchain-nvidia-ai-endpoints", specifier = ">=0.0.11" },
-    { name = "langgraph", specifier = ">=0.0.20" },
-    { name = "openai", specifier = ">=1.6.1" },
-    { name = "pandas", specifier = ">=2.1.4" },
+    { name = "chromadb", specifier = ">=0.5.0" },
+    { name = "langchain", specifier = ">=0.2.0" },
+    { name = "langchain-nvidia-ai-endpoints", specifier = ">=0.3.0" },
+    { name = "langgraph", specifier = ">=0.2.0" },
+    { name = "openai", specifier = ">=1.50.0" },
+    { name = "pandas", specifier = ">=2.2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
-    { name = "streamlit", specifier = ">=1.29.0" },
+    { name = "streamlit", specifier = ">=1.40.0" },
+    { name = "typing-extensions", specifier = ">=4.12.0" },
 ]
 provides-extras = ["dev"]
 

@@ -143,27 +143,339 @@ SEARCH_TERMS: [3-5 key terms to search the data for]"""
         return {"analysis": response, "query": query}
 
 
+class SafetyGuardAgent(NemotronAgent):
+    """Agent for content safety moderation using Nemotron Safety Guard.
+    
+    This agent acts as a mandatory checkpoint for all user inputs and AI outputs,
+    ensuring content safety and adherence to user-defined policies.
+    """
+    
+    def __init__(self):
+        """Initialize the Safety Guard agent with Nemotron Safety Guard 8B v3."""
+        super().__init__(model_name="nvidia/llama-3_1-nemotron-safety-guard-8b-v3")
+        self.unsafe_categories = [
+            "illegal_activity", "violence", "self_harm", "harassment",
+            "hate_speech", "sexual_content", "privacy_violation",
+            "medical_advice", "financial_advice", "dangerous_content"
+        ]
+    
+    def check_input_safety(self, user_input: str) -> Dict:
+        """Check if user input is safe and appropriate.
+        
+        Args:
+            user_input: The user's input text to check
+            
+        Returns:
+            Dictionary with safety assessment:
+                - is_safe: bool
+                - category: str (if unsafe)
+                - explanation: str
+                - should_block: bool
+        """
+        system_prompt = """You are a content safety moderator. Your job is to analyze user input for safety concerns.
+
+Evaluate the input for:
+1. Self-harm or crisis indicators
+2. Requests for medical or financial advice
+3. Privacy violations or attempts to extract sensitive data
+4. Inappropriate, harmful, or abusive content
+5. Off-topic or malicious queries
+
+Respond in this exact format:
+SAFE: [YES or NO]
+CATEGORY: [category if unsafe, or "safe" if safe]
+SEVERITY: [LOW, MEDIUM, HIGH, or NONE]
+EXPLANATION: [brief explanation]
+ACTION: [ALLOW or BLOCK]"""
+
+        prompt = f"""Analyze this user input for safety concerns:
+
+USER INPUT: "{user_input}"
+
+Provide your safety assessment:"""
+
+        try:
+            response = self.generate(prompt, system_prompt=system_prompt, max_tokens=200)
+            
+            # Parse the response
+            is_safe = "SAFE: YES" in response or "SAFE:YES" in response
+            should_block = "ACTION: BLOCK" in response or "ACTION:BLOCK" in response
+            
+            # Extract category (simple parsing)
+            category = "unknown"
+            if "CATEGORY:" in response:
+                try:
+                    category_line = [line for line in response.split('\n') if 'CATEGORY:' in line][0]
+                    category = category_line.split('CATEGORY:')[1].strip().lower()
+                except:
+                    pass
+            
+            return {
+                "is_safe": is_safe and not should_block,
+                "category": category if not is_safe else "safe",
+                "explanation": response,
+                "should_block": should_block,
+                "raw_response": response
+            }
+        
+        except Exception as e:
+            # Fail-safe: if safety check fails, be cautious
+            return {
+                "is_safe": False,
+                "category": "error",
+                "explanation": f"Safety check failed: {str(e)}",
+                "should_block": True,
+                "error": str(e)
+            }
+    
+    def check_output_safety(self, ai_output: str, user_context: str = "") -> Dict:
+        """Check if AI-generated output is safe and appropriate.
+        
+        Args:
+            ai_output: The AI's generated response to check
+            user_context: Optional user query context
+            
+        Returns:
+            Dictionary with safety assessment
+        """
+        system_prompt = """You are a content safety moderator reviewing AI-generated responses.
+
+Check the output for:
+1. Medical diagnoses or prescriptive medical advice
+2. Financial investment advice or predictions
+3. Privacy violations or disclosure of sensitive data
+4. Harmful recommendations or dangerous suggestions
+5. Biased or inappropriate content
+
+Respond in this exact format:
+SAFE: [YES or NO]
+ISSUES: [list any issues, or "none" if safe]
+SEVERITY: [LOW, MEDIUM, HIGH, or NONE]
+RECOMMENDATION: [ALLOW, MODIFY, or BLOCK]"""
+
+        prompt = f"""Review this AI-generated response for safety:
+
+USER QUERY: "{user_context}"
+
+AI RESPONSE: "{ai_output}"
+
+Provide your safety assessment:"""
+
+        try:
+            response = self.generate(prompt, system_prompt=system_prompt, max_tokens=200)
+            
+            is_safe = "SAFE: YES" in response or "SAFE:YES" in response
+            should_block = "RECOMMENDATION: BLOCK" in response or "RECOMMENDATION:BLOCK" in response
+            needs_modification = "RECOMMENDATION: MODIFY" in response or "RECOMMENDATION:MODIFY" in response
+            
+            return {
+                "is_safe": is_safe and not should_block,
+                "needs_modification": needs_modification,
+                "should_block": should_block,
+                "explanation": response,
+                "raw_response": response
+            }
+        
+        except Exception as e:
+            # Fail-safe: if safety check fails, allow but log
+            return {
+                "is_safe": True,  # Don't block on errors for output
+                "needs_modification": False,
+                "should_block": False,
+                "explanation": f"Safety check failed (allowing): {str(e)}",
+                "error": str(e)
+            }
+
+
+class ReActAgent(NemotronAgent):
+    """Agent implementing the ReAct (Reasoning + Action) pattern.
+    
+    This agent performs iterative reasoning and action cycles to solve complex problems.
+    """
+    
+    def __init__(self):
+        """Initialize the ReAct agent with Nemotron Super 49B."""
+        super().__init__(model_name="nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct")
+        self.system_prompt = """You are an expert reasoning agent using the ReAct pattern.
+
+For each step, you will:
+1. REASON: Analyze the current situation and plan your next action
+2. ACT: Decide what action to take (query data, search web, analyze, etc.)
+3. OBSERVE: Review the results and determine if you need more information
+
+Be explicit about your reasoning process. Think step-by-step."""
+    
+    def reason_and_plan(self, query: str, context: Dict) -> Dict:
+        """First step: Reason about the query and create an action plan.
+        
+        Args:
+            query: User's question
+            context: Current context including previous observations
+            
+        Returns:
+            Dictionary with reasoning and planned actions
+        """
+        # Build context summary
+        context_summary = ""
+        if context.get("observations"):
+            context_summary = "Previous observations:\n" + "\n".join([
+                f"- {obs}" for obs in context.get("observations", [])
+            ])
+        
+        prompt = f"""You are solving this problem: "{query}"
+
+{context_summary}
+
+THINK STEP-BY-STEP:
+1. What do I need to understand to answer this question?
+2. What information do I already have?
+3. What information am I missing?
+4. What should be my next action?
+
+Respond in this format:
+REASONING: [your step-by-step reasoning]
+NEXT_ACTION: [data_retrieval, web_search, analysis, or final_answer]
+ACTION_DETAILS: [specific details about what to retrieve/search/analyze]
+CONFIDENCE: [LOW, MEDIUM, or HIGH]"""
+
+        response = self.generate(prompt, system_prompt=self.system_prompt, max_tokens=400)
+        
+        # Parse the response
+        next_action = "analysis"  # default
+        if "NEXT_ACTION:" in response:
+            try:
+                action_line = [line for line in response.split('\n') if 'NEXT_ACTION:' in line][0]
+                next_action = action_line.split('NEXT_ACTION:')[1].strip().lower()
+            except:
+                pass
+        
+        return {
+            "reasoning": response,
+            "next_action": next_action,
+            "full_response": response
+        }
+    
+    def observe_and_reflect(self, action_result: str, original_query: str) -> Dict:
+        """Third step: Observe results and reflect on next steps.
+        
+        Args:
+            action_result: Results from the action taken
+            original_query: The original user query
+            
+        Returns:
+            Dictionary with observations and next step determination
+        """
+        prompt = f"""You took an action to help answer: "{original_query}"
+
+ACTION RESULT:
+{action_result}
+
+REFLECT:
+1. What did I learn from this result?
+2. Do I have enough information to answer the question?
+3. If not, what else do I need?
+
+Respond in this format:
+OBSERVATION: [what you learned]
+SUFFICIENT: [YES or NO - do you have enough info?]
+NEXT_STEP: [continue_searching, ready_to_synthesize, or need_different_approach]
+REASONING: [explain your thinking]"""
+
+        response = self.generate(prompt, system_prompt=self.system_prompt, max_tokens=300)
+        
+        # Parse if we're ready to synthesize
+        is_sufficient = "SUFFICIENT: YES" in response or "SUFFICIENT:YES" in response
+        
+        return {
+            "observation": response,
+            "is_sufficient": is_sufficient,
+            "full_response": response
+        }
+
+
 # Convenience function for testing
 def test_agent():
     """Test the Nemotron agent with a simple query."""
-    print("🧪 Testing Nemotron Agent...\n")
+    print("🧪 Testing Nemotron Agents...\n")
     
     # Test 1: Basic generation
+    print("="*60)
+    print("TEST 1: Basic Generation")
+    print("="*60)
     agent = NemotronAgent()
     response = agent.generate("What is artificial intelligence in one sentence?")
-    print(f"✅ Basic Generation Test:")
-    print(f"Response: {response}\n")
+    print(f"✅ Response: {response}\n")
     
     # Test 2: Query Analyzer
-    print(f"✅ Query Analyzer Test:")
+    print("="*60)
+    print("TEST 2: Query Analyzer")
+    print("="*60)
     analyzer = QueryAnalyzer()
     query = "What patterns do you see in my sleep quality over the past week?"
     analysis = analyzer.analyze_query(query)
     print(f"Query: {query}")
-    print(f"Analysis:\n{analysis['analysis']}\n")
+    print(f"✅ Analysis:\n{analysis['analysis']}\n")
     
-    # Test 3: Reasoning Agent (with mock data)
-    print(f"✅ Reasoning Agent Test:")
+    # Test 3: Safety Guard - Input Check
+    print("="*60)
+    print("TEST 3: Safety Guard - Input Safety Check")
+    print("="*60)
+    safety_guard = SafetyGuardAgent()
+    
+    # Safe input
+    safe_input = "What patterns do you see in my sleep quality?"
+    safe_result = safety_guard.check_input_safety(safe_input)
+    print(f"Input: '{safe_input}'")
+    print(f"✅ Is Safe: {safe_result['is_safe']}")
+    print(f"   Category: {safe_result['category']}\n")
+    
+    # Potentially unsafe input
+    unsafe_input = "Can you prescribe me medication for my headaches?"
+    unsafe_result = safety_guard.check_input_safety(unsafe_input)
+    print(f"Input: '{unsafe_input}'")
+    print(f"⚠️  Is Safe: {unsafe_result['is_safe']}")
+    print(f"   Should Block: {unsafe_result['should_block']}")
+    print(f"   Category: {unsafe_result['category']}\n")
+    
+    # Test 4: Safety Guard - Output Check
+    print("="*60)
+    print("TEST 4: Safety Guard - Output Safety Check")
+    print("="*60)
+    test_output = "Based on your sleep patterns, I recommend trying to sleep 7-8 hours per night."
+    output_result = safety_guard.check_output_safety(test_output, safe_input)
+    print(f"AI Output: '{test_output}'")
+    print(f"✅ Is Safe: {output_result['is_safe']}\n")
+    
+    # Test 5: ReAct Agent - Reasoning
+    print("="*60)
+    print("TEST 5: ReAct Agent - Reasoning")
+    print("="*60)
+    react_agent = ReActAgent()
+    reasoning = react_agent.reason_and_plan(
+        "What's causing my low energy levels?",
+        {"observations": []}
+    )
+    print(f"Query: 'What's causing my low energy levels?'")
+    print(f"✅ Reasoning:\n{reasoning['reasoning']}\n")
+    print(f"   Next Action: {reasoning['next_action']}\n")
+    
+    # Test 6: ReAct Agent - Observation
+    print("="*60)
+    print("TEST 6: ReAct Agent - Observation")
+    print("="*60)
+    mock_action_result = "Found 5 entries showing sleep < 6 hours correlates with energy score < 3"
+    observation = react_agent.observe_and_reflect(
+        mock_action_result,
+        "What's causing my low energy levels?"
+    )
+    print(f"Action Result: '{mock_action_result}'")
+    print(f"✅ Observation:\n{observation['observation']}\n")
+    print(f"   Sufficient Info: {observation['is_sufficient']}\n")
+    
+    # Test 7: Reasoning Agent (with mock data)
+    print("="*60)
+    print("TEST 7: Reasoning Agent with Context")
+    print("="*60)
     reasoner = ReasoningAgent()
     
     mock_data = [
@@ -176,9 +488,11 @@ def test_agent():
         "What patterns do you see in my sleep?",
         mock_data
     )
-    print(f"Insight:\n{insight}\n")
+    print(f"✅ Insight:\n{insight}\n")
     
+    print("="*60)
     print("✅ All agent tests complete!")
+    print("="*60)
 
 
 if __name__ == "__main__":

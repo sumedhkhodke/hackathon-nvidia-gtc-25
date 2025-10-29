@@ -1,35 +1,22 @@
-# Virtual Environment
+# Environment
+.env
 venv/
-env/
 .venv/
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-.Python
 
-# Environment variables
-.env
-
-# Vector DB
+# Databases
 chroma_db/
 *.db
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # OS
 .DS_Store
-Thumbs.db
 
-# Data (if sensitive)
-data/*.csv
-data/*.json
-
-# Keep example data
-!data/sample_lifelog.csv
+# Note: uv.lock should be committed for reproducible builds
