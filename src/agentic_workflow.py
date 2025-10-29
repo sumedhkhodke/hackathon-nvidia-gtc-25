@@ -121,71 +121,214 @@ class LifelogAgentWorkflow:
         # Continue by default
         return "continue"
     
-    def analyze_query_node(self, state: AgentState) -> AgentState:
-        """Node 1: Analyze user query to understand intent.
+    def safety_check_input_node(self, state: AgentState) -> AgentState:
+        """Node: Safety check for user input using Nemotron Safety Guard.
         
         Args:
             state: Current agent state
             
         Returns:
-            Updated state with query analysis
+            Updated state with safety check results
         """
         query = state["query"]
-        
-        # Add reasoning step
         reasoning_steps = state.get("reasoning_steps", [])
+        safety_checks = state.get("safety_checks", [])
+        
         reasoning_steps.append({
-            "step": "Query Analysis",
-            "description": f"Analyzing query: '{query}'"
+            "step": "🛡️ Input Safety Check",
+            "description": "Validating user input with Nemotron Safety Guard"
         })
         
-        # Analyze the query
-        analysis = self.query_analyzer.analyze_query(query)
+        # Perform safety check
+        safety_result = self.safety_guard.check_input_safety(query)
+        
+        # Add to safety checks log
+        safety_checks.append({
+            "type": "input",
+            "is_safe": safety_result["is_safe"],
+            "category": safety_result["category"],
+            "should_block": safety_result.get("should_block", False)
+        })
+        
+        # If unsafe, block and set error response
+        if safety_result.get("should_block", False):
+            reasoning_steps.append({
+                "step": "⚠️ Input Blocked",
+                "description": f"Input flagged as unsafe: {safety_result['category']}"
+            })
+            
+            return {
+                **state,
+                "safety_checks": safety_checks,
+                "reasoning_steps": reasoning_steps,
+                "response": f"I'm sorry, but I can't process this request. It was flagged for: {safety_result['category']}. Please rephrase your question.",
+                "should_continue": False
+            }
         
         reasoning_steps.append({
-            "step": "Query Analysis Complete",
-            "description": f"Extracted intent and search parameters"
+            "step": "✅ Input Validated",
+            "description": "User input passed safety checks"
         })
         
         return {
             **state,
-            "query_analysis": analysis,
+            "safety_checks": safety_checks,
+            "reasoning_steps": reasoning_steps,
+            "should_continue": True
+        }
+    
+    def react_reason_node(self, state: AgentState) -> AgentState:
+        """Node: ReAct REASON - Analyze query and plan next action.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            Updated state with reasoning and action plan
+        """
+        query = state["query"]
+        reasoning_steps = state.get("reasoning_steps", [])
+        react_context = state.get("react_context", {})
+        observations = state.get("observations", [])
+        iteration = state.get("iteration_count", 0)
+        
+        reasoning_steps.append({
+            "step": f"🧠 ReAct Cycle {iteration + 1}: REASON",
+            "description": "Analyzing problem and planning next action"
+        })
+        
+        # Use ReAct agent to reason about the query
+        reasoning_result = self.react_agent.reason_and_plan(
+            query,
+            {"observations": observations}
+        )
+        
+        # Update context
+        react_context["current_reasoning"] = reasoning_result["reasoning"]
+        react_context["next_action"] = reasoning_result["next_action"]
+        
+        reasoning_steps.append({
+            "step": "💡 Reasoning Complete",
+            "description": f"Planned action: {reasoning_result['next_action']}"
+        })
+        
+        return {
+            **state,
+            "react_context": react_context,
             "reasoning_steps": reasoning_steps
         }
     
-    def retrieve_data_node(self, state: AgentState) -> AgentState:
-        """Node 2: Retrieve relevant data from vector store.
+    def react_act_node(self, state: AgentState) -> AgentState:
+        """Node: ReAct ACT - Execute the planned action.
         
         Args:
             state: Current agent state
             
         Returns:
-            Updated state with retrieved data
+            Updated state with action results
         """
         query = state["query"]
         reasoning_steps = state.get("reasoning_steps", [])
+        react_context = state.get("react_context", {})
+        next_action = react_context.get("next_action", "data_retrieval")
         
         reasoning_steps.append({
-            "step": "Data Retrieval",
-            "description": "Searching vector database for relevant lifelog entries"
+            "step": "⚡ ReAct: ACT",
+            "description": f"Executing action: {next_action}"
         })
         
-        # Query the vector store
-        results = self.data_store.query(query, n_results=5)
+        # Execute the action (for now, always retrieve data)
+        # In future iterations, this could call different tools
+        if "data" in next_action or "retrieval" in next_action or "analysis" in next_action:
+            results = self.data_store.query(query, n_results=5)
+            action_result = f"Retrieved {len(results)} relevant lifelog entries"
+            
+            reasoning_steps.append({
+                "step": "📊 Data Retrieved",
+                "description": f"Found {len(results)} relevant entries from personal lifelog"
+            })
+            
+            return {
+                **state,
+                "retrieved_data": results,
+                "react_context": {**react_context, "last_action_result": action_result},
+                "reasoning_steps": reasoning_steps
+            }
+        else:
+            # Default action
+            results = self.data_store.query(query, n_results=5)
+            action_result = f"Retrieved {len(results)} entries"
+            
+            return {
+                **state,
+                "retrieved_data": results,
+                "react_context": {**react_context, "last_action_result": action_result},
+                "reasoning_steps": reasoning_steps
+            }
+    
+    def react_observe_node(self, state: AgentState) -> AgentState:
+        """Node: ReAct OBSERVE - Reflect on action results and decide next steps.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            Updated state with observations and continuation decision
+        """
+        query = state["query"]
+        reasoning_steps = state.get("reasoning_steps", [])
+        react_context = state.get("react_context", {})
+        observations = state.get("observations", [])
+        iteration_count = state.get("iteration_count", 0)
         
         reasoning_steps.append({
-            "step": "Data Retrieved",
-            "description": f"Found {len(results)} relevant entries"
+            "step": "👁️ ReAct: OBSERVE",
+            "description": "Reflecting on results and determining sufficiency"
         })
+        
+        # Get last action result
+        action_result = react_context.get("last_action_result", "No action result")
+        
+        # Use ReAct agent to observe and reflect
+        observation_result = self.react_agent.observe_and_reflect(action_result, query)
+        
+        # Add observation to history
+        observations.append(observation_result["observation"])
+        
+        # Increment iteration
+        iteration_count += 1
+        
+        # Determine if we should continue
+        should_continue = not observation_result["is_sufficient"]
+        
+        # Don't continue if we've hit max iterations
+        if iteration_count >= self.max_iterations:
+            should_continue = False
+            reasoning_steps.append({
+                "step": "🎯 Observation Complete",
+                "description": f"Sufficient information gathered after {iteration_count} cycles"
+            })
+        elif should_continue:
+            reasoning_steps.append({
+                "step": "🔄 Need More Information",
+                "description": "Continuing ReAct loop for additional data"
+            })
+        else:
+            reasoning_steps.append({
+                "step": "✅ Ready to Synthesize",
+                "description": "Sufficient information gathered to answer query"
+            })
         
         return {
             **state,
-            "retrieved_data": results,
+            "observations": observations,
+            "iteration_count": iteration_count,
+            "should_continue": should_continue,
             "reasoning_steps": reasoning_steps
         }
     
     def synthesize_response_node(self, state: AgentState) -> AgentState:
-        """Node 3: Synthesize final response using Nemotron.
+        """Node: Synthesize final response using Nemotron reasoning agent.
         
         Args:
             state: Current agent state
@@ -196,17 +339,18 @@ class LifelogAgentWorkflow:
         query = state["query"]
         retrieved_data = state.get("retrieved_data", [])
         reasoning_steps = state.get("reasoning_steps", [])
+        observations = state.get("observations", [])
         
         reasoning_steps.append({
-            "step": "Response Synthesis",
-            "description": "Using Nemotron to analyze patterns and generate insights"
+            "step": "🎨 Response Synthesis",
+            "description": "Synthesizing insights from all gathered information"
         })
         
         # Generate response using reasoning agent
         response = self.reasoning_agent.analyze_with_context(query, retrieved_data)
         
         reasoning_steps.append({
-            "step": "Complete",
+            "step": "✨ Synthesis Complete",
             "description": "Generated personalized insights and recommendations"
         })
         
@@ -216,21 +360,88 @@ class LifelogAgentWorkflow:
             "reasoning_steps": reasoning_steps
         }
     
+    def safety_check_output_node(self, state: AgentState) -> AgentState:
+        """Node: Safety check for AI-generated output using Nemotron Safety Guard.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            Updated state with output safety validation
+        """
+        query = state["query"]
+        response = state.get("response", "")
+        reasoning_steps = state.get("reasoning_steps", [])
+        safety_checks = state.get("safety_checks", [])
+        
+        reasoning_steps.append({
+            "step": "🛡️ Output Safety Check",
+            "description": "Validating AI response with Nemotron Safety Guard"
+        })
+        
+        # Perform output safety check
+        safety_result = self.safety_guard.check_output_safety(response, query)
+        
+        # Add to safety checks log
+        safety_checks.append({
+            "type": "output",
+            "is_safe": safety_result["is_safe"],
+            "should_block": safety_result.get("should_block", False),
+            "needs_modification": safety_result.get("needs_modification", False)
+        })
+        
+        # If output should be blocked
+        if safety_result.get("should_block", False):
+            reasoning_steps.append({
+                "step": "⚠️ Output Blocked",
+                "description": "AI response flagged as potentially unsafe"
+            })
+            
+            return {
+                **state,
+                "safety_checks": safety_checks,
+                "reasoning_steps": reasoning_steps,
+                "response": "I apologize, but I need to refine my response. Let me provide a safer answer based on your data."
+            }
+        
+        # If output needs modification (log but allow)
+        if safety_result.get("needs_modification", False):
+            reasoning_steps.append({
+                "step": "⚡ Output Refined",
+                "description": "Response passed with minor considerations noted"
+            })
+        else:
+            reasoning_steps.append({
+                "step": "✅ Output Validated",
+                "description": "AI response passed all safety checks"
+            })
+        
+        return {
+            **state,
+            "safety_checks": safety_checks,
+            "reasoning_steps": reasoning_steps
+        }
+    
     def run(self, query: str) -> dict:
-        """Execute the workflow for a given query.
+        """Execute the workflow for a given query with ReAct pattern and safety checks.
         
         Args:
             query: User's natural language question
             
         Returns:
-            Dictionary with response and reasoning steps
+            Dictionary with response, reasoning steps, safety checks, and ReAct observations
         """
         initial_state = {
             "query": query,
             "query_analysis": {},
             "retrieved_data": [],
             "response": "",
-            "reasoning_steps": []
+            "reasoning_steps": [],
+            "safety_checks": [],
+            "react_context": {},
+            "observations": [],
+            "iteration_count": 0,
+            "should_continue": True
         }
         
         try:
@@ -240,8 +451,11 @@ class LifelogAgentWorkflow:
             return {
                 "success": True,
                 "query": query,
-                "response": final_state["response"],
-                "reasoning_steps": final_state["reasoning_steps"],
+                "response": final_state.get("response", ""),
+                "reasoning_steps": final_state.get("reasoning_steps", []),
+                "safety_checks": final_state.get("safety_checks", []),
+                "observations": final_state.get("observations", []),
+                "react_cycles": final_state.get("iteration_count", 0),
                 "retrieved_entries": len(final_state.get("retrieved_data", []))
             }
         
@@ -250,7 +464,8 @@ class LifelogAgentWorkflow:
                 "success": False,
                 "query": query,
                 "error": str(e),
-                "response": f"Sorry, I encountered an error: {str(e)}"
+                "response": f"Sorry, I encountered an error: {str(e)}",
+                "reasoning_steps": []
             }
 
 
