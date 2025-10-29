@@ -42,11 +42,11 @@ Not just a chatbot - a **multi-agent system** implementing **ReAct (Reasoning + 
 - AI-powered privacy guardrails actively protect user data
 
 ### 🎯 Specialized Nemotron Models
-Each agent uses the right Nemotron model for its role:
-- **Llama 3.3 Nemotron Super 49B**: Complex reasoning & synthesis
-- **Nemotron Safety Guard 8B v3**: ✨ **NEW** - Safety & moderation
-- **Nemotron Nano 9B**: Fast query analysis (future)
-- **Nemotron Nano VL 12B**: Multimodal data processing (future)
+Each agent uses the right Nemotron model for its role (aligned with NVIDIA GTC 2025 Nemotron Prize Track):
+- **Nemotron Super 49B v1.5**: ✅ Complex reasoning & synthesis
+- **Nemotron Safety Guard 8B v3**: ✅ **NEW** - Safety & moderation
+- **Nemotron Nano 9B v2**: ✅ Fast query analysis & tool use
+- **Nemotron Nano VL 12B v2**: 📋 Multimodal data processing (planned for future iteration)
 
 ---
 

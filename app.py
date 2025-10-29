@@ -292,8 +292,9 @@ def main():
         
         st.header("🤖 Active Agents")
         st.markdown("""
-        <span class="agent-badge">🧠 Nemotron 49B</span>
-        <span class="agent-badge">🛡️ Safety 8B</span>
+        <span class="agent-badge">🧠 Super 49B v1.5</span>
+        <span class="agent-badge">🛡️ Safety 8B v3</span>
+        <span class="agent-badge">⚡ Nano 9B v2</span>
         <span class="agent-badge">🔄 ReAct</span>
         """, unsafe_allow_html=True)
         
@@ -578,8 +579,9 @@ Try asking me a question, or click a demo button in the sidebar!"""
         with col1:
             st.markdown("""
             ### 🧠 Reasoning Agent
-            **Model:** Nemotron Super 49B v1.5  
+            **Model:** Nemotron Super 49B v1.5 ✅
             **Role:** High-level reasoning, causal analysis, synthesis  
+            **Prize Track:** Recommended Model
             **Capabilities:**
             - Advanced multi-step reasoning
             - Pattern identification in personal data
@@ -589,20 +591,32 @@ Try asking me a question, or click a demo button in the sidebar!"""
             
             st.markdown("""
             ### 🔄 ReAct Agent
-            **Model:** Nemotron Super 49B v1.5  
+            **Model:** Nemotron Super 49B v1.5 ✅
             **Role:** Iterative reasoning and action  
+            **Prize Track:** Recommended Model
             **Capabilities:**
             - Query decomposition
             - Action planning
             - Result observation
             - Adaptive decision-making
+            
+            ### ⚡ Query Analyzer Agent
+            **Model:** Nemotron Nano 9B v2 ✅
+            **Role:** Fast query processing & tool use  
+            **Prize Track:** Recommended Model
+            **Capabilities:**
+            - Rapid intent extraction
+            - Low-latency query classification
+            - Efficient tool selection
+            - Optimized for speed
             """)
         
         with col2:
             st.markdown("""
             ### 🛡️ Safety Guard
-            **Model:** Nemotron Safety Guard 8B v3  
+            **Model:** Nemotron Safety Guard 8B v3 ✅
             **Role:** Content moderation and safety  
+            **Prize Track:** NEW Recommended Model
             **Capabilities:**
             - Input validation
             - Output filtering
@@ -647,8 +661,9 @@ Try asking me a question, or click a demo button in the sidebar!"""
         with tech_col1:
             st.markdown("""
             **AI Models:**
-            - Nemotron Super 49B v1.5
-            - Nemotron Safety 8B v3
+            - Nemotron Super 49B v1.5 ✅
+            - Nemotron Safety 8B v3 ✅ (NEW)
+            - Nemotron Nano 9B v2 ✅
             - NVIDIA NIM APIs
             """)
         

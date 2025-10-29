@@ -56,7 +56,11 @@ class NemotronAgent:
 
 
 class ReasoningAgent(NemotronAgent):
-    """Specialized agent for complex reasoning and synthesis."""
+    """Specialized agent for complex reasoning and synthesis.
+    
+    Uses Nemotron-super-49b-v1.5 for advanced multi-step reasoning and causal analysis.
+    This is one of the recommended models for the NVIDIA GTC 2025 Nemotron Prize Track.
+    """
     
     def __init__(self):
         super().__init__(model_name="nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct")
@@ -105,10 +109,14 @@ Your response:"""
 
 
 class QueryAnalyzer(NemotronAgent):
-    """Agent for analyzing user queries and extracting intent."""
+    """Agent for analyzing user queries and extracting intent.
+    
+    Uses Nemotron-nano-9b-v2 for fast, efficient query processing and tool use.
+    This is one of the recommended models for the NVIDIA GTC 2025 Nemotron Prize Track.
+    """
     
     def __init__(self):
-        super().__init__(model_name="nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct")
+        super().__init__(model_name="nvidia/nvidia-nemotron-nano-9b-v2")
         self.system_prompt = """You are a query analysis agent. 
 Your job is to understand user questions about their personal data and extract:
 1. The main topic/category (sleep, mood, productivity, exercise, etc.)
@@ -144,15 +152,16 @@ SEARCH_TERMS: [3-5 key terms to search the data for]"""
 
 
 class SafetyGuardAgent(NemotronAgent):
-    """Agent for content safety moderation using Nemotron Safety Guard.
+    """Agent for content safety moderation using Nemotron Safety Guard 8B v3.
     
     This agent acts as a mandatory checkpoint for all user inputs and AI outputs,
     ensuring content safety and adherence to user-defined policies.
+    This is one of the NEW recommended models for the NVIDIA GTC 2025 Nemotron Prize Track.
     """
     
     def __init__(self):
         """Initialize the Safety Guard agent with Nemotron Safety Guard 8B v3."""
-        super().__init__(model_name="nvidia/llama-3_1-nemotron-safety-guard-8b-v3")
+        super().__init__(model_name="nvidia/llama-3.1-nemotron-safety-guard-8b-v3")
         self.unsafe_categories = [
             "illegal_activity", "violence", "self_harm", "harassment",
             "hate_speech", "sexual_content", "privacy_violation",
@@ -291,11 +300,13 @@ class ReActAgent(NemotronAgent):
     """Agent implementing the ReAct (Reasoning + Action) pattern.
     
     This agent performs iterative reasoning and action cycles to solve complex problems.
+    Uses Nemotron-super-49b-v1.5 for sophisticated multi-step planning and observation.
+    This is one of the recommended models for the NVIDIA GTC 2025 Nemotron Prize Track.
     """
     
     def __init__(self):
-        """Initialize the ReAct agent with Nemotron Super 49B."""
-        super().__init__(model_name="nvidia/llama-3.3-nemotron-super-49b-v1.5-instruct")
+        """Initialize the ReAct agent with Nemotron Super 49B v1.5."""
+        super().__init__(model_name="nvidia/llama-3.3-nemotron-super-49b-v1.5")
         self.system_prompt = """You are an expert reasoning agent using the ReAct pattern.
 
 For each step, you will:
