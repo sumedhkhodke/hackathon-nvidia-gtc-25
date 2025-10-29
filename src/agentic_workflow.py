@@ -467,6 +467,71 @@ class LifelogAgentWorkflow:
                 "response": f"Sorry, I encountered an error: {str(e)}",
                 "reasoning_steps": []
             }
+    
+    def stream(self, query: str):
+        """Stream the workflow execution with intermediate steps for real-time UI updates.
+        
+        Args:
+            query: User's natural language question
+            
+        Yields:
+            Dictionaries with intermediate state updates for streaming to UI
+        """
+        initial_state = {
+            "query": query,
+            "query_analysis": {},
+            "retrieved_data": [],
+            "response": "",
+            "reasoning_steps": [],
+            "safety_checks": [],
+            "react_context": {},
+            "observations": [],
+            "iteration_count": 0,
+            "should_continue": True
+        }
+        
+        try:
+            # Stream the graph execution
+            for event in self.graph.stream(initial_state):
+                # Extract node name and state from event
+                node_name = list(event.keys())[0]
+                node_state = event[node_name]
+                
+                # Yield intermediate state update
+                yield {
+                    "type": "intermediate",
+                    "node": node_name,
+                    "reasoning_steps": node_state.get("reasoning_steps", []),
+                    "safety_checks": node_state.get("safety_checks", []),
+                    "iteration_count": node_state.get("iteration_count", 0),
+                    "should_continue": node_state.get("should_continue", True)
+                }
+            
+            # Yield final result
+            # Get the last event's state
+            final_state = node_state
+            
+            yield {
+                "type": "final",
+                "success": True,
+                "query": query,
+                "response": final_state.get("response", ""),
+                "reasoning_steps": final_state.get("reasoning_steps", []),
+                "safety_checks": final_state.get("safety_checks", []),
+                "observations": final_state.get("observations", []),
+                "react_cycles": final_state.get("iteration_count", 0),
+                "retrieved_entries": len(final_state.get("retrieved_data", []))
+            }
+        
+        except Exception as e:
+            yield {
+                "type": "error",
+                "success": False,
+                "query": query,
+                "error": str(e),
+                "response": f"Sorry, I encountered an error: {str(e)}",
+                "reasoning_steps": []
+            }
 
 
 # Convenience function for testing
