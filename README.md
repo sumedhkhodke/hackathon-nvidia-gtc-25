@@ -10,7 +10,7 @@ en-us/ai/)
 - **Solution** – LangGraph orchestrates Nemotron agents (reasoning, safety, retrieval) running on NVIDIA NIM, mirroring the data and control paths in `docs/project-diagram.md`.
 - **Safety & Privacy** – Dual Nemotron Safety Guard checkpoints moderate every input/output and keep sensitive data local-first with encrypted storage.
 - **Nemotron & NIM Alignment** – Showcases Super 49B for reasoning, Nano 9B for fast tool use, and Guard 8B for policy enforcement, highlighting NVIDIA GTC Nemotron track goals.
-- **Current Status** – Streamlit UI, ChromaDB lifelog store, and iterative ReAct loop are MVP-complete; backlog includes multimodal ingestion and proactive insights.
+- **Current Status** – Streamlit UI, lifelog store, and iterative ReAct loop are MVP-complete; backlog includes multimodal ingestion and proactive insights.
 - **Resources** – Architecture blueprint and latest diagrams live in `docs/project-outline.md` and `docs/project-diagram.md`.
 
 ## Architecture Diagram
