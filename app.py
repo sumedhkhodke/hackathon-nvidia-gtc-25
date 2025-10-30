@@ -1,6 +1,9 @@
 """Enhanced Streamlit chat interface for Agentic Lifelog POC Demo."""
-import streamlit as st
 import os
+# Suppress tokenizer parallelism warning from ChromaDB/embedding models
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -274,7 +277,7 @@ def main():
         demo_questions = get_demo_questions()
         st.write("**Click to try:**")
         for i, question in enumerate(demo_questions[:4]):
-            if st.button(f"💡 {question[:35]}...", key=f"demo_{i}", use_container_width=True):
+            if st.button(f"💡 {question[:35]}...", key=f"demo_{i}", width='stretch'):
                 st.session_state.demo_question = question
         
         st.markdown("---")
@@ -485,15 +488,15 @@ Try asking me a question, or click a demo button in the sidebar!"""
             col1, col2 = st.columns(2)
             
             with col1:
-                st.plotly_chart(create_mood_timeline(df), use_container_width=True)
+                st.plotly_chart(create_mood_timeline(df), width='stretch')
             
             with col2:
-                st.plotly_chart(create_category_summary(df), use_container_width=True)
+                st.plotly_chart(create_category_summary(df), width='stretch')
             
             st.markdown("---")
             
             # Correlation heatmap
-            st.plotly_chart(create_correlation_heatmap(df), use_container_width=True)
+            st.plotly_chart(create_correlation_heatmap(df), width='stretch')
             
             st.markdown("---")
             
@@ -501,7 +504,7 @@ Try asking me a question, or click a demo button in the sidebar!"""
             st.subheader("📝 Recent Lifelog Entries")
             st.dataframe(
                 df.sort_values('date', ascending=False).head(15),
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
         else:
@@ -516,124 +519,165 @@ Try asking me a question, or click a demo button in the sidebar!"""
         
         This system implements a sophisticated **multi-agent architecture** using NVIDIA Nemotron models, 
         orchestrated by LangGraph to demonstrate advanced agentic AI capabilities for the **NVIDIA GTC Hackathon 2025**.
+        Background Analysis & Coaching agents process historical data asynchronously to provide KPI-driven insights to the ReAct workflow.
         """)
         
-        # Architecture diagram (text-based)
-        st.code("""
-┌─────────────────────────────────────────────────────────┐
-│                    USER QUERY                           │
-└────────────────────┬────────────────────────────────────┘
-                     │
-                     ▼
-        ┌────────────────────────────┐
-        │  🛡️ Safety Guard (Input)   │
-        │  Nemotron Safety 8B v3     │
-        └────────────┬───────────────┘
-                     │
-                     ▼
-        ┌────────────────────────────┐
-        │   🔄 ReAct Reasoning Loop  │
-        │                            │
-        │  ┌──────────────────────┐  │
-        │  │  1. REASON & PLAN    │  │
-        │  │  Nemotron Super 49B  │  │
-        │  └──────────┬───────────┘  │
-        │             │               │
-        │             ▼               │
-        │  ┌──────────────────────┐  │
-        │  │  2. ACT (Retrieve)   │  │
-        │  │  ChromaDB Vector DB  │  │
-        │  └──────────┬───────────┘  │
-        │             │               │
-        │             ▼               │
-        │  ┌──────────────────────┐  │
-        │  │  3. OBSERVE & DECIDE │  │
-        │  │  Continue or Finish? │  │
-        │  └──────────┬───────────┘  │
-        │             │               │
-        └─────────────┼───────────────┘
-                      │ (loops 1-3x)
-                      ▼
-        ┌────────────────────────────┐
-        │  🎨 Synthesis & Analysis   │
-        │  Nemotron Super 49B        │
-        └────────────┬───────────────┘
-                     │
-                     ▼
-        ┌────────────────────────────┐
-        │  🛡️ Safety Guard (Output)  │
-        │  Nemotron Safety 8B v3     │
-        └────────────┬───────────────┘
-                     │
-                     ▼
-        ┌────────────────────────────┐
-        │      SAFE RESPONSE         │
-        └────────────────────────────┘
-        """, language="text")
+        mermaid_diagram = """
+        <div style='width:100%; background:#ffffff; border-radius:12px; padding:16px; box-shadow:0 0 12px rgba(0,0,0,0.05);'>
+            <pre class='mermaid' style='min-height:520px;'>
+flowchart LR
+    classDef ioNode fill:#ffe0e0,stroke:#d32f2f,stroke-width:2px;
+
+    Question([User question]):::ioNode --> SafetyIn
+
+    subgraph System["Agentic Insight Pipeline"]
+        subgraph Capture["1. Capture & Store"]
+            UserData[User data streams] --> Normalize[Normalize & tag]
+            Normalize --> VectorDB[Vector DB]
+            Normalize --> Metadata[Metadata]
+        end
+
+        subgraph Background["2. Background Analysis"]
+            VectorDB --> AnalysisAgent[Analysis agent]
+            Metadata --> AnalysisAgent
+            AnalysisAgent --> KPIStore[KPI store]
+            KPIStore --> CoachAgent[Coach agent]
+            CoachAgent --> InsightsCache[Insights cache]
+        end
+
+        subgraph Conversation["3. Conversational Coach"]
+            SafetyIn --> Orchestrator[ReAct orchestrator]
+            Orchestrator --> Retrieval[Search vector DB]
+            Retrieval --> Orchestrator
+            Orchestrator --> InsightsTool[Query insights cache]
+            InsightsTool --> Orchestrator
+            Orchestrator --> Synthesis[Synthesize answer]
+            Synthesis --> SafetyOut[Safety check out]
+        end
+    end
+
+    VectorDB -.-> Retrieval
+    InsightsCache -.-> InsightsTool
+
+    SafetyOut --> Response([Coach response]):::ioNode
+            </pre>
+        </div>
+        <script src='https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'></script>
+        <script>
+            if (window.mermaid) {
+                mermaid.initialize({ startOnLoad: false, theme: 'default' });
+                mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+            }
+        </script>
+        """
+
+        st.components.v1.html(mermaid_diagram, height=640, scrolling=False)
         
         st.markdown("---")
         
-        # Agent descriptions
-        col1, col2 = st.columns(2)
+        # Enhanced agent descriptions with new background agents
+        st.subheader("🤖 Agent Descriptions")
+        
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             st.markdown("""
-            ### 🧠 Reasoning Agent
-            **Model:** Nemotron Super 49B v1.5 ✅
-            **Role:** High-level reasoning, causal analysis, synthesis  
-            **Prize Track:** Recommended Model
-            **Capabilities:**
-            - Advanced multi-step reasoning
-            - Pattern identification in personal data
-            - Hypothesis generation
-            - Personalized recommendations
-            """)
+            ### Core Reasoning Agents
             
-            st.markdown("""
-            ### 🔄 ReAct Agent
-            **Model:** Nemotron Super 49B v1.5 ✅
-            **Role:** Iterative reasoning and action  
-            **Prize Track:** Recommended Model
-            **Capabilities:**
-            - Query decomposition
-            - Action planning
-            - Result observation
+            **🧠 Reasoning Agent**
+            - Model: Nemotron Super 49B v1.5 ✅
+            - High-level reasoning & synthesis
+            - Pattern identification
+            - Hypothesis generation
+            
+            **🔄 ReAct Agent**
+            - Model: Nemotron Super 49B v1.5 ✅
+            - Iterative reasoning loops
+            - Action planning & observation
             - Adaptive decision-making
             
-            ### ⚡ Query Analyzer Agent
-            **Model:** Nemotron Nano 9B v2 ✅
-            **Role:** Fast query processing & tool use  
-            **Prize Track:** Recommended Model
-            **Capabilities:**
-            - Rapid intent extraction
-            - Low-latency query classification
-            - Efficient tool selection
+            **⚡ Query Analyzer**
+            - Model: Nemotron Nano 9B v2 ✅
+            - Fast intent extraction
+            - Tool selection
             - Optimized for speed
             """)
         
         with col2:
             st.markdown("""
-            ### 🛡️ Safety Guard
-            **Model:** Nemotron Safety Guard 8B v3 ✅
-            **Role:** Content moderation and safety  
-            **Prize Track:** NEW Recommended Model
-            **Capabilities:**
-            - Input validation
-            - Output filtering
-            - Privacy protection
-            - Harmful content detection
-            """)
+            ### Background Analysis
             
-            st.markdown("""
-            ### 📊 Data Retrieval
-            **Technology:** ChromaDB + Embeddings  
-            **Role:** Semantic search and retrieval  
-            **Capabilities:**
-            - Vector similarity search
-            - Context-aware retrieval
-            - Efficient data access
-            - RAG pattern implementation
+            **📊 Analysis Agent**
+            - Model: Nemotron Super 49B ✅
+            - Runs on historical data
+            - Calculates KPIs:
+              - Sleep quality trends
+              - Productivity metrics
+              - Mood correlations
+              - Activity patterns
+            - Triggered separately/scheduled
+            
+            **🎯 Coach Agent**
+            - Model: Nemotron Super 49B ✅
+            - Uses KPIs from Analysis Agent
+            - Generates coaching insights:
+              - Personalized recommendations
+              - Goal suggestions
+              - Behavior optimizations
+            - Pre-computes insights for fast retrieval
             """)
+        
+        with col3:
+            st.markdown("""
+            ### Safety & Support
+            
+            **🛡️ Safety Guard**
+            - Model: Nemotron Safety 8B v3 ✅
+            - Dual checkpoint system
+            - 23 unsafe categories
+            - Privacy protection
+            
+            **💡 Insights Tool**
+            - Bridges background & real-time
+            - Fetches pre-computed KPIs
+            - Enriches ReAct context
+            - Enables data-driven responses
+            
+            **📊 Data Stores**
+            - ChromaDB: Vector embeddings
+            - KPI Store: Computed metrics
+            - Insights Cache: Coach outputs
+            - SQLite: Metadata
+            """)
+        
+        st.markdown("---")
+        
+        # Background agents workflow
+        st.subheader("🔄 Background Agent Workflow")
+        
+        st.markdown("""
+        ### How Background Agents Enhance the System
+        
+        The new **Analysis Agent** and **Coach Agent** operate asynchronously to pre-compute insights:
+        
+        1. **📊 Analysis Agent (Triggered Separately)**
+           - Runs periodic analysis on historical lifelog data
+           - Computes KPIs like: average sleep quality, productivity trends, mood patterns
+           - Stores metrics in KPI Store for fast retrieval
+           - Example KPIs: "Weekly sleep efficiency: 78%", "Peak productivity: Tuesday 2-4pm"
+        
+        2. **🎯 Coach Agent (Triggered After Analysis)**
+           - Uses KPIs from Analysis Agent as input
+           - Generates personalized coaching insights based on patterns
+           - Pre-computes recommendations for common scenarios
+           - Caches insights like: "Your mood improves 23% after morning exercise"
+        
+        3. **💡 Integration with ReAct Workflow**
+           - During ReAct ACT phase, the Insights Tool can query both stores
+           - Enriches context with pre-computed KPIs and coaching insights
+           - Enables faster, more data-driven responses
+           - Example: User asks about sleep → ReAct retrieves both raw data AND pre-computed sleep KPIs
+        """)
         
         st.markdown("---")
         
@@ -644,6 +688,7 @@ Try asking me a question, or click a demo button in the sidebar!"""
         ✅ **Agentic Behavior** - Autonomous reasoning and decision-making  
         ✅ **ReAct Pattern** - Reason → Act → Observe cycles for complex problem-solving  
         ✅ **Multi-Agent Orchestration** - Specialized agents working in coordination via LangGraph  
+        ✅ **Background Processing** - Async Analysis & Coach agents for KPI-driven insights
         ✅ **Safety Guardrails** - Dual safety checks on input and output  
         ✅ **Agentic RAG** - Intelligent retrieval-augmented generation  
         ✅ **Tool Integration** - Vector DB querying and data analysis  
