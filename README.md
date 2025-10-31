@@ -1,9 +1,8 @@
-# Agentic Lifelog · Personal AI Coach
+# Agentic Wellness Lifelog · Personal AI Coach
 
-[![NVIDIA GTC 2025](https://img.shields.io/badge/NVIDIA%20GTC-2025-76B900?style=flat&logo=nvidia)](https://www.nvidia.com/
-gtc/)
-[![Nemotron Prize Track](https://img.shields.io/badge/Prize%20Track-Nemotron-76B900?style=flat)](https://www.nvidia.com/
-en-us/ai/)
+[![NVIDIA GTC 2025](https://img.shields.io/badge/NVIDIA%20GTC-2025-76B900?style=flat&logo=nvidia)](https://www.nvidia.com/gtc/)
+[![Nemotron Prize Track](https://img.shields.io/badge/Prize%20Track-Nemotron-76B900?style=flat)](https://www.nvidia.com/en-us/ai/)
+
 
 - **Mission** – Deliver a privacy-first personal intelligence layer that converts quantified-self data into actionable coaching, as framed in `docs/project-outline.md`.
 - **Problem** – Individuals drown in siloed sleep, mood, and productivity logs that lack synthesis; the platform unifies them into a trusted narrative.
