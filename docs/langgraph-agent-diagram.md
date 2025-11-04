@@ -23,7 +23,7 @@ graph TD
     ReActReason[🧠 ReAct: REASON<br/>Nemotron Super 49B<br/>Analyze & Plan] --> ReActAct[⚡ ReAct: ACT<br/>Execute Action<br/>Data Retrieval]
     
     %% ACT node now retrieves both data and cached insights
-    ReActAct --> VectorDB[(ChromaDB)]
+    ReActAct <-.->|RAG| VectorDB[(ChromaDB)]
     Cache -.->|Load Insights| ReActAct
     
     ReActAct --> ReActObserve[👁️ ReAct: OBSERVE<br/>Reflect on Results<br/>Check Sufficiency]
