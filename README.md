@@ -51,6 +51,63 @@ flowchart LR
     SafetyOut --> Response([Coach response]):::ioNode
 ```
 
+## User Query Workflow
+
+```mermaid
+graph TD
+    Start([User Query]) --> Entry[🚀 Entry Point]
+    Entry --> SafetyIn[🛡️ Safety Check Input<br/>NemoGuard 8B v3]
+    
+    %% Background Agents (run at startup)
+    AppStart([App Startup]) -.->|Dynamic trigger| BgAgents[🔄 Background Agents<br/>KPI • Pattern • Coach]
+    BgAgents -.->|Store| Cache[(💾 Insights Cache<br/>JSON)]
+    
+    %% Safety check branches
+    SafetyIn -->|✅ Safe| ReActReason
+    SafetyIn -->|❌ Blocked| BlockedResponse[⛔ Blocked Response<br/>Return error message]
+    BlockedResponse --> End([End])
+    
+    %% ReAct Loop
+    ReActReason[🧠 ReAct: REASON<br/>Nemotron Super 49B<br/>Analyze & Plan] --> ReActAct[⚡ ReAct: ACT<br/>Execute Action<br/>Data Retrieval]
+    
+    %% ACT node now retrieves both data and cached insights
+    ReActAct <-.->|RAG| VectorDB[(ChromaDB)]
+    Cache -.->|Load Insights| ReActAct
+    
+    ReActAct --> ReActObserve[👁️ ReAct: OBSERVE<br/>Reflect on Results<br/>Check Sufficiency]
+    
+    %% Conditional routing
+    ReActObserve --> Decision{Should Continue?}
+    Decision -->|Continue<br/>Need more info<br/>iteration < 3| ReActReason
+    Decision -->|Synthesize<br/>Sufficient info<br/>iteration >= 3| Synthesize[🎨 Synthesize Response<br/>Nemotron Super 49B<br/>Generate Final Answer]
+    
+    %% Output safety check
+    Synthesize --> SafetyOut[🛡️ Safety Check Output<br/>NemoGuard 8B v3]
+    SafetyOut -->|✅ Safe| FinalResponse[💬 Final Response]
+    SafetyOut -->|⚠️ Needs Refinement| ModifiedResponse[📝 Modified Response]
+    
+    FinalResponse --> End
+    ModifiedResponse --> End
+    
+    %% Styling
+    style Start fill:#e1f5ff
+    style End fill:#e1f5ff
+    style AppStart fill:#e8eaf6
+    style BgAgents fill:#d1c4e9,stroke:#7b1fa2,stroke-width:2px
+    style Cache fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style VectorDB fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style SafetyIn fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px
+    style SafetyOut fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px
+    style ReActReason fill:#fff3e0,stroke:#ff6f00,stroke-width:2px
+    style ReActAct fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style ReActObserve fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style Decision fill:#ffe0b2,stroke:#ff9800,stroke-width:3px
+    style Synthesize fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style BlockedResponse fill:#ffebee,stroke:#f44336,stroke-width:2px
+    style FinalResponse fill:#c8e6c9,stroke:#4caf50,stroke-width:2px
+    style ModifiedResponse fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+```
+
 ## Multi-Agent Architecture
 
 ### Background Agents
