@@ -132,6 +132,46 @@ class LifelogDataStore:
             "collection_name": self.collection_name,
             "status": "Ready"
         }
+    
+    def get_all_entries(self) -> List[Dict]:
+        """Get all entries from the database.
+        
+        Returns:
+            List of all entries with metadata
+        """
+        if not self.collection:
+            try:
+                self.collection = self.client.get_collection(
+                    name=self.collection_name,
+                    embedding_function=self.embedding_function
+                )
+            except Exception:
+                return []
+        
+        count = self.collection.count()
+        if count == 0:
+            return []
+        
+        # Get all entries (up to 1000 for performance)
+        results = self.collection.get(
+            limit=min(count, 1000)
+        )
+        
+        # Format entries
+        entries = []
+        if results and results['ids']:
+            for i in range(len(results['ids'])):
+                entry = {
+                    "id": results['ids'][i],
+                    "content": results['documents'][i] if i < len(results['documents']) else "",
+                    "entry": results['documents'][i] if i < len(results['documents']) else "",
+                }
+                # Add metadata fields
+                if i < len(results['metadatas']) and results['metadatas'][i]:
+                    entry.update(results['metadatas'][i])
+                entries.append(entry)
+        
+        return entries
 
 
 # Convenience function for quick testing

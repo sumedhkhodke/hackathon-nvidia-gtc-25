@@ -110,6 +110,83 @@ Please provide:
 Your response:"""
         
         return self.generate(prompt, system_prompt=self.system_prompt, max_tokens=1500)
+    
+    def analyze_with_enriched_context(self, query: str, context_with_insights: Dict) -> str:
+        """Analyze a query with both retrieved data and pre-computed insights.
+        
+        Args:
+            query: User's question
+            context_with_insights: Dictionary containing:
+                - lifelog_data: Retrieved relevant data from vector store
+                - background_insights: Pre-computed insights from cache
+            
+        Returns:
+            Analysis incorporating both real-time data and cached insights
+        """
+        lifelog_data = context_with_insights.get("lifelog_data", [])
+        background_insights = context_with_insights.get("background_insights", {})
+        
+        # Format lifelog data
+        context_text = ""
+        if lifelog_data:
+            context_text = "PERSONAL LIFELOG ENTRIES:\n" + "\n\n".join([
+                f"Entry {i+1}:\n{item['content']}"
+                for i, item in enumerate(lifelog_data)
+            ])
+        
+        # Format background insights
+        insights_text = ""
+        if background_insights:
+            parts = []
+            
+            # KPIs
+            if "sleep_kpi" in background_insights:
+                sleep = background_insights["sleep_kpi"]
+                parts.append(f"Sleep Analysis: Average {sleep.get('average_hours', 'unknown')} hours, trend: {sleep.get('trend', 'unknown')}")
+            
+            if "mood_kpi" in background_insights:
+                mood = background_insights["mood_kpi"]
+                parts.append(f"Mood Analysis: Average {mood.get('average', 'unknown')}/5, volatility: {mood.get('volatility', 'unknown')}")
+            
+            if "productivity_kpi" in background_insights:
+                prod = background_insights["productivity_kpi"]
+                parts.append(f"Productivity: Average score {prod.get('average_score', 'unknown')}/10")
+            
+            if "overall_health" in background_insights:
+                health = background_insights["overall_health"]
+                parts.append(f"Overall Health Score: {health.get('score', 'unknown')}/10 - {health.get('rating', 'unknown')}")
+            
+            # Patterns
+            if "patterns" in background_insights:
+                for pattern in background_insights["patterns"]:
+                    parts.append(f"Pattern: {pattern.get('pattern', '')}")
+            
+            # Coaching insights
+            if "coaching_insights" in background_insights:
+                for insight in background_insights["coaching_insights"]:
+                    parts.append(f"Recommendation: {insight.get('recommendation', '')}")
+            
+            if parts:
+                insights_text = "\n\nPRE-COMPUTED INSIGHTS:\n" + "\n".join(parts)
+        
+        # Construct prompt
+        prompt = f"""Based on the following information, please provide a comprehensive answer to the user's question.
+
+{context_text}
+{insights_text}
+
+USER QUESTION: {query}
+
+Please provide:
+1. A direct answer to the question
+2. Supporting evidence from both the personal data and pre-computed insights
+3. 2-3 specific, actionable recommendations
+
+Note: If pre-computed insights are available, leverage them to provide deeper analysis.
+
+Your response:"""
+        
+        return self.generate(prompt, system_prompt=self.system_prompt, max_tokens=1500)
 
 
 class QueryAnalyzer(NemotronAgent):

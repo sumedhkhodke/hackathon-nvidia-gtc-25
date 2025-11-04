@@ -11,6 +11,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from src.data_store import LifelogDataStore
 from src.agentic_workflow import LifelogAgentWorkflow
+from src.background_agents import BackgroundAnalyzer
 
 # Load environment variables
 load_dotenv()
@@ -140,6 +141,14 @@ def initialize_system():
     
     # Initialize workflow
     workflow = LifelogAgentWorkflow(data_store)
+    
+    # Run background analysis (only once per session)
+    if not st.session_state.get("insights_generated", False):
+        with st.spinner("🔄 Running background analysis..."):
+            analyzer = BackgroundAnalyzer(data_store)
+            analyzer.run_analysis()
+            st.session_state.insights_generated = True
+            st.success("✅ Background insights ready!")
     
     return workflow, data_store, stats
 
