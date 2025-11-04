@@ -11,7 +11,7 @@ graph TD
     Entry --> SafetyIn[🛡️ Safety Check Input<br/>NemoGuard 8B v3]
     
     %% Background Agents (run at startup)
-    AppStart([App Startup]) -.->|One-time| BgAgents[🔄 Background Agents<br/>KPI • Pattern • Coach]
+    AppStart([App Startup]) -.->|Dynamic trigger| BgAgents[🔄 Background Agents<br/>KPI • Pattern • Coach]
     BgAgents -.->|Store| Cache[(💾 Insights Cache<br/>JSON)]
     
     %% Safety check branches
