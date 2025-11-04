@@ -4,18 +4,21 @@ import chromadb
 from chromadb.config import Settings
 from typing import List, Dict
 import os
+from src.nvidia_embeddings import NVIDIAEmbeddingFunction
 
 
 class LifelogDataStore:
-    """Manages storage and retrieval of personal lifelog data using ChromaDB."""
+    """Manages storage and retrieval of personal lifelog data using ChromaDB with NVIDIA embeddings."""
     
     def __init__(self, persist_directory: str = "./chroma_db"):
-        """Initialize the vector database.
+        """Initialize the vector database with NVIDIA embedding function.
         
         Args:
             persist_directory: Directory to persist the database
         """
         self.persist_directory = persist_directory
+        self.embedding_function = NVIDIAEmbeddingFunction()
+        
         self.client = chromadb.Client(Settings(
             persist_directory=persist_directory,
             anonymized_telemetry=False
@@ -35,14 +38,18 @@ class LifelogDataStore:
         # Load CSV
         df = pd.read_csv(csv_path)
         
-        # Create or get collection
+        # Create or get collection with NVIDIA embedding function
         try:
             self.collection = self.client.create_collection(
                 name=self.collection_name,
-                metadata={"description": "Personal lifelog entries"}
+                embedding_function=self.embedding_function,
+                metadata={"description": "Personal lifelog with NVIDIA embeddings"}
             )
         except Exception:
-            self.collection = self.client.get_collection(name=self.collection_name)
+            self.collection = self.client.get_collection(
+                name=self.collection_name,
+                embedding_function=self.embedding_function
+            )
         
         # Prepare data for embedding
         documents = []
@@ -62,7 +69,7 @@ class LifelogDataStore:
             
             ids.append(f"entry_{idx}")
         
-        # Add to collection (ChromaDB will auto-embed)
+        # Add to collection (ChromaDB will use NVIDIA embeddings)
         self.collection.add(
             documents=documents,
             metadatas=metadatas,
@@ -82,7 +89,10 @@ class LifelogDataStore:
             List of relevant entries with metadata
         """
         if not self.collection:
-            self.collection = self.client.get_collection(name=self.collection_name)
+            self.collection = self.client.get_collection(
+                name=self.collection_name,
+                embedding_function=self.embedding_function
+            )
         
         results = self.collection.query(
             query_texts=[query_text],
@@ -109,7 +119,10 @@ class LifelogDataStore:
         """
         if not self.collection:
             try:
-                self.collection = self.client.get_collection(name=self.collection_name)
+                self.collection = self.client.get_collection(
+                    name=self.collection_name,
+                    embedding_function=self.embedding_function
+                )
             except Exception:
                 return {"total_entries": 0, "status": "No data loaded"}
         
