@@ -47,6 +47,8 @@ Thumbs.db
 # Frontend build
 frontend/dist/
 frontend/node_modules/
+# Keep images directory structure
+!frontend/public/images/
 
 # Logs
 *.log

@@ -59,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onDemoQuestionClick, stats }) 
         <div className="flex items-center gap-2">
           {/* Official NVIDIA Logo */}
           <img 
-            src="/NVIDIA-logo-white-16x9.png" 
+            src="/images/NVIDIA-logo-white-16x9.png" 
             alt="NVIDIA" 
             className="h-10 object-contain"
           />
