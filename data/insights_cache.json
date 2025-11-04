@@ -1,0 +1,51 @@
+{
+  "kpis": {
+    "sleep": {
+      "average_hours": 6.8,
+      "min_hours": 5.0,
+      "max_hours": 9.0,
+      "consistency_score": 8.8,
+      "quality_score": "unknown",
+      "total_entries": 8,
+      "trend": "improving"
+    },
+    "mood": {
+      "status": "no_data"
+    },
+    "productivity": {
+      "status": "no_data"
+    },
+    "exercise": {
+      "total_sessions": 8,
+      "types": {
+        "cardio": 1,
+        "other": 4,
+        "walking": 2,
+        "flexibility": 1
+      },
+      "most_common": "other",
+      "weekly_average": 7.0
+    },
+    "overall_health": {
+      "score": 6.5,
+      "rating": "good",
+      "components": {
+        "sleep_weight": 0.6,
+        "mood_weight": 0.4,
+        "productivity_weight": 0,
+        "exercise_weight": 0
+      }
+    }
+  },
+  "patterns": [],
+  "coaching": [
+    {
+      "category": "ai_generated",
+      "insight": "Personalized Health Insight",
+      "recommendation": "Given the high exercise frequency of 7.0 sessions/week, prioritize improving sleep quality by establishing a consistent sleep schedule of 7-8 hours each night to enhance recovery, mood stabilization, and overall productivity.",
+      "priority": "high"
+    }
+  ],
+  "generated_at": "2025-11-04T00:39:47.986304",
+  "total_entries_analyzed": 32
+}

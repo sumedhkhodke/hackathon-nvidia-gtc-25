@@ -4,6 +4,7 @@ import operator
 from langgraph.graph import StateGraph, END
 from src.agents import QueryAnalyzer, ReasoningAgent, SafetyGuardAgent, ReActAgent
 from src.data_store import LifelogDataStore
+from src.insights_cache import InsightsCache
 
 
 class AgentState(TypedDict):
@@ -18,6 +19,7 @@ class AgentState(TypedDict):
     observations: list
     iteration_count: int
     should_continue: bool
+    cached_insights: dict  # NEW: Pre-computed insights from background agents
 
 
 class LifelogAgentWorkflow:
@@ -36,6 +38,7 @@ class LifelogAgentWorkflow:
         self.safety_guard = SafetyGuardAgent()
         self.react_agent = ReActAgent()
         self.max_iterations = max_iterations
+        self.insights_cache = InsightsCache()  # NEW: Cache for pre-computed insights
         self.graph = self._build_graph()
     
     def _build_graph(self) -> StateGraph:
@@ -240,28 +243,55 @@ class LifelogAgentWorkflow:
         # Execute the action (for now, always retrieve data)
         # In future iterations, this could call different tools
         if "data" in next_action or "retrieval" in next_action or "analysis" in next_action:
+            # Existing data retrieval
             results = self.data_store.query(query, n_results=5)
-            action_result = f"Retrieved {len(results)} relevant lifelog entries"
+            
+            # NEW: Get cached insights (simple)
+            cached_insights = self.insights_cache.get_relevant_insights(query)
+            
+            # Add to context
+            action_result = f"Retrieved {len(results)} entries"
+            if cached_insights:
+                action_result += f" and {len(cached_insights)} pre-computed insights"
             
             reasoning_steps.append({
                 "step": "📊 Data Retrieved",
                 "description": f"Found {len(results)} relevant entries from personal lifelog"
             })
             
+            if cached_insights:
+                reasoning_steps.append({
+                    "step": "💡 Insights Loaded",
+                    "description": f"Loaded {len(cached_insights)} pre-computed insights from cache"
+                })
+            
+            # Store both in state
             return {
                 **state,
                 "retrieved_data": results,
-                "react_context": {**react_context, "last_action_result": action_result},
+                "cached_insights": cached_insights,  # NEW field
+                "react_context": {
+                    **react_context, 
+                    "last_action_result": action_result,
+                    "has_insights": bool(cached_insights)
+                },
                 "reasoning_steps": reasoning_steps
             }
         else:
             # Default action
             results = self.data_store.query(query, n_results=5)
+            
+            # NEW: Also get insights for default action
+            cached_insights = self.insights_cache.get_relevant_insights(query)
+            
             action_result = f"Retrieved {len(results)} entries"
+            if cached_insights:
+                action_result += f" and {len(cached_insights)} insights"
             
             return {
                 **state,
                 "retrieved_data": results,
+                "cached_insights": cached_insights,  # NEW
                 "react_context": {**react_context, "last_action_result": action_result},
                 "reasoning_steps": reasoning_steps
             }
@@ -338,6 +368,7 @@ class LifelogAgentWorkflow:
         """
         query = state["query"]
         retrieved_data = state.get("retrieved_data", [])
+        cached_insights = state.get("cached_insights", {})  # NEW
         reasoning_steps = state.get("reasoning_steps", [])
         observations = state.get("observations", [])
         
@@ -346,13 +377,28 @@ class LifelogAgentWorkflow:
             "description": "Synthesizing insights from all gathered information"
         })
         
-        # Generate response using reasoning agent
-        response = self.reasoning_agent.analyze_with_context(query, retrieved_data)
+        # Include insights in context for synthesis
+        context_with_insights = {
+            "lifelog_data": retrieved_data,
+            "background_insights": cached_insights
+        }
         
-        reasoning_steps.append({
-            "step": "✨ Synthesis Complete",
-            "description": "Generated personalized insights and recommendations"
-        })
+        # Generate response with enriched context
+        response = self.reasoning_agent.analyze_with_enriched_context(
+            query, context_with_insights
+        )
+        
+        # Note if we used cached insights
+        if cached_insights:
+            reasoning_steps.append({
+                "step": "✨ Synthesis Complete",
+                "description": f"Generated response using {len(retrieved_data)} entries and {len(cached_insights)} pre-computed insights"
+            })
+        else:
+            reasoning_steps.append({
+                "step": "✨ Synthesis Complete",
+                "description": "Generated personalized insights and recommendations"
+            })
         
         return {
             **state,
@@ -441,7 +487,8 @@ class LifelogAgentWorkflow:
             "react_context": {},
             "observations": [],
             "iteration_count": 0,
-            "should_continue": True
+            "should_continue": True,
+            "cached_insights": {}  # NEW: Initialize cached insights
         }
         
         try:
@@ -487,7 +534,8 @@ class LifelogAgentWorkflow:
             "react_context": {},
             "observations": [],
             "iteration_count": 0,
-            "should_continue": True
+            "should_continue": True,
+            "cached_insights": {}  # NEW: Initialize cached insights
         }
         
         try:

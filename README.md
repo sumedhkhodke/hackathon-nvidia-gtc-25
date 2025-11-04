@@ -52,13 +52,18 @@ flowchart LR
 ```
 
 ## Get Started
-1. Clone: `git clone https://github.com/yourusername/hackathon-nvidia-gtc-25.git && cd hackathon-nvidia-gtc-25`
-2. Install Python 3.10+ deps: `pip install .` (or `pip install -e .[dev]` for tooling).
-3. Configure credentials: `cp env.example .env` and add `NVIDIA_API_KEY` plus any data source secrets.
-4. Launch the demo: `streamlit run app.py`
-5. Optional smoke tests: `python src/agents.py` and `python src/agentic_workflow.py`
+1. Clone this repo.
+2. Install environments: `uv sync`
+3. Configure credentials: `cp env.example .env` and add `NVIDIA_API_KEY`.
+4. Initialize the ChromaDB Vector Database with NVIDIA embeddings:
+```
+# Initialize with sample data
+uv run python src/data_store.py
+```
+5. Launch the demo: `uv run streamlit run app.py`
 
 ## Notes
+- To clean old data: run `rm -rf chroma_db`.
 - Sample lifelog data sits in `data/sample_lifelog.csv` for quick experimentation.
-- Update `.streamlit/secrets.toml` or `.env` before connecting to live NVIDIA NIM endpoints.
-- See `uv.lock` if you prefer `uv sync` to mirror the locked dependency set.
+- Update `.env` before connecting to live NVIDIA NIM endpoints.
+- See `uv.lock` to mirror the locked dependency set.

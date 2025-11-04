@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --nvidia-green: #76B900;
+    --nvidia-green-dark: #5a9400;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-nvidia-green to-nvidia-green-dark bg-clip-text text-transparent;
+  }
+  
+  .reasoning-step {
+    @apply bg-gray-100 p-3 rounded-lg mb-2 border-l-4 border-nvidia-green transition-all hover:bg-gray-200;
+  }
+  
+  .safety-check {
+    @apply bg-green-50 border-l-green-500;
+  }
+  
+  .react-cycle {
+    @apply bg-orange-50 border-l-orange-500;
+  }
+  
+  .synthesis {
+    @apply bg-blue-50 border-l-blue-500;
+  }
+  
+  .agent-badge {
+    @apply inline-block bg-nvidia-green text-white px-3 py-1 rounded-full text-sm font-bold mr-2 mb-2;
+  }
+  
+  .stat-box {
+    @apply bg-gradient-to-br from-nvidia-green to-nvidia-green-dark text-white p-6 rounded-lg text-center shadow-lg;
+  }
+  
+  .metric-card {
+    @apply bg-gray-50 p-6 rounded-lg border border-gray-200 text-center;
+  }
+  
+  .demo-banner {
+    @apply bg-gradient-to-r from-nvidia-green to-nvidia-green-dark text-white p-4 rounded-lg text-center font-bold;
+  }
+}
+
+@layer utilities {
+  .animation-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+/* Animations */
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Loading spinner */
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--nvidia-green);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Chat message animations */
+.message-enter {
+  animation: slideUp 0.3s ease-out;
+}
+
+.message-appear {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Enhanced typography for markdown content */
+.prose {
+  @apply text-gray-800 leading-relaxed;
+}
+
+.prose h1 {
+  @apply text-2xl font-bold text-gray-900 mt-6 mb-3;
+}
+
+.prose h2 {
+  @apply text-xl font-bold text-gray-900 mt-5 mb-2;
+}
+
+.prose h3 {
+  @apply text-lg font-semibold text-gray-900 mt-4 mb-2;
+}
+
+.prose p {
+  @apply mb-4 leading-7;
+}
+
+.prose strong {
+  @apply font-semibold text-gray-900;
+}
+
+.prose ul, .prose ol {
+  @apply my-4 pl-6;
+}
+
+.prose li {
+  @apply mb-2;
+}
+
+.prose code {
+  @apply px-1.5 py-0.5 bg-gray-100 text-sm rounded font-mono;
+}
+
+.prose pre code {
+  @apply block p-4 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-gray-300 pl-4 italic my-4 text-gray-700;
+}
+
+/* Better scrollbar for chat container */
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
